@@ -1,0 +1,65 @@
+name: gold-wallet
+
+services:
+  mongo:
+    image: mongo:7.0
+    # Single-node replica set (needed for multi-document transactions) with auth.
+    # A replica set with auth needs a keyfile; it is generated on each start.
+    command:
+      - bash
+      - -c
+      - >-
+        head -c 512 /dev/urandom | base64 | tr -d '\n' > /tmp/mongo-keyfile &&
+        chmod 400 /tmp/mongo-keyfile && chown 999:999 /tmp/mongo-keyfile &&
+        exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /tmp/mongo-keyfile --bind_ip_all
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root_pass
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      # Initiates the replica set on first run, then reports healthy once this node is primary.
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet -u root -p root_pass --authenticationDatabase admin --eval
+          "try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }) };
+          quit(db.hello().isWritablePrimary ? 0 : 1)"
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+
+  api:
+    build: ./apps/api
+    env_file:
+      - path: ./.env.example
+        required: true
+      - path: ./.env
+        required: false
+    environment:
+      PORT: "4000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  web:
+    build: ./apps/web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+volumes:
+  mongo-data:

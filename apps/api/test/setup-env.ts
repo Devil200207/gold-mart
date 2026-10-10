@@ -1,0 +1,23 @@
+// Runs before each test file, before any app module reads its config.
+Object.assign(process.env, {
+  NODE_ENV: 'test',
+  JOBS_ENABLED: 'false',
+  DEV_EXPOSE_OTP: 'true',
+  JWT_SECRET: 'test-jwt-secret',
+  MOCK_GATEWAY_SECRET: 'test-gateway-secret',
+  PUBLIC_BASE_URL: 'http://localhost:5173',
+  WEB_ORIGIN: 'http://localhost:5173',
+  CURRENCY: 'AED',
+  MOCK_BASE_PRICE_MINOR: '30000',
+  BUY_SPREAD_BPS: '150',
+  SELL_SPREAD_BPS: '150',
+  FLAT_FEE_MINOR: '0',
+  TAX_RATE_BPS: '0',
+  MIN_BUY_MINOR: '100',
+  QUOTE_TTL_SECONDS: '180',
+  DELIVERY_MIN_MG: '10000',
+  DELIVERY_CHARGE_PAYMENT_TIMEOUT_MIN: '30',
+  PHYSICAL_STOCK_MG: '5000000',
+  RATE_LIMIT_AUTH_PER_15MIN: '100000',
+  RATE_LIMIT_TRADE_PER_MIN: '100000',
+});
